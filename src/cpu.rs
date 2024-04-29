@@ -1,9 +1,13 @@
 #[allow(non_snake_case)]
 
 pub(crate) enum Registers_16 {
+    AF,
     BC,
     DE,
     HL,
+    SP,
+    HLI,
+    HLD,
 }
 
 pub(crate) enum Registers_8 {
@@ -14,9 +18,10 @@ pub(crate) enum Registers_8 {
     E,
     H,
     L,
+	HL,
 }
 
-pub(crate) enum Conditions {
+pub(crate) enum Flags {
     NZ,
     Z,
     NC,
