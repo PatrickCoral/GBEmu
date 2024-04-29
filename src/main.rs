@@ -4,6 +4,8 @@ mod parser;
 
 use std::time::{Duration, Instant};
 
+use mmu::MMU;
+
 struct Timer {
     curr_time: Instant,
     prev_time: Instant,
@@ -28,9 +30,5 @@ impl Timer {
 }
 
 fn main() {
-    let mut t = Timer::init();
-	t.delta_time();
-    for _ in 0..10 {
-        println!("{:?}", t.delta_time());
-    }
+    let mmu = MMU::new();
 }

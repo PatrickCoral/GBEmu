@@ -83,6 +83,7 @@ enum Ops {
 fn load_ROM() {
 	let rom = read("res/cpu_instrs.gb").unwrap();
 	println!("{} {}", rom.len(), 0xFFFF);
+    println!("{:#X} {:#04X}", rom[0], rom[0xFFFF]);
 }
 
 #[cfg(test)]
