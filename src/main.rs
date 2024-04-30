@@ -1,5 +1,5 @@
-mod mmu;
 mod cpu;
+mod mmu;
 mod parser;
 
 use std::time::{Duration, Instant};
@@ -16,7 +16,7 @@ impl Timer {
         Self {
             curr_time: time,
             prev_time: time,
-            framte_time: Duration::from_millis((1.0/59.73 * 1000.0) as u64),
+            framte_time: Duration::from_millis((1.0 / 59.73 * 1000.0) as u64),
         }
     }
 
@@ -29,7 +29,7 @@ impl Timer {
 
 fn main() {
     let mut t = Timer::init();
-	t.delta_time();
+    t.delta_time();
     for _ in 0..10 {
         println!("{:?}", t.delta_time());
     }

@@ -4,18 +4,18 @@ use std::fs::read;
 use crate::cpu::{Flags, Registers_16, Registers_8};
 
 #[allow(non_camel_case_types)]
-enum Ops {
+pub(crate) enum Ops {
     nop,
-    ld_r16_imm16(Registers_16, u16),
+    ld_r16_imm16(Registers_16),
     ld_r16mem_a(Registers_16),
     ld_a_r16mem(Registers_16),
-    ld_imm16_sp(u16),
+    ld_imm16_sp,
     inc_r16(Registers_16),
     dec_r16(Registers_16),
     add_hl_r16(Registers_16),
     inc_r8(Registers_8),
     dec_r8(Registers_8),
-    ld_r8_imm8(Registers_8, u8),
+    ld_r8_imm8(Registers_8),
     rlca,
     rrca,
     rla,
@@ -24,8 +24,8 @@ enum Ops {
     cpl,
     scf,
     ccf,
-    jr_imm8(u8),
-    jr_cond_imm8(Flags, u8),
+    jr_imm8,
+    jr_cond_imm8(Flags),
     stop,
     ld_r8_r8(Registers_8, Registers_8),
     halt,
@@ -37,33 +37,33 @@ enum Ops {
     xor_a_r8(Registers_8),
     or_a_r8(Registers_8),
     cp_a_r8(Registers_8),
-    add_a_imm8(u8),
-    adc_a_imm8(u8),
-    sub_a_imm8(u8),
-    sbc_a_imm8(u8),
-    and_a_imm8(u8),
-    xor_a_imm8(u8),
-    or_a_imm8(u8),
-    cp_a_imm8(u8),
+    add_a_imm8,
+    adc_a_imm8,
+    sub_a_imm8,
+    sbc_a_imm8,
+    and_a_imm8,
+    xor_a_imm8,
+    or_a_imm8,
+    cp_a_imm8,
     ret_cond(Flags),
     ret,
     reti,
-    jp_cond_imm16(Flags, u16),
-    jp_imm16(u16),
+    jp_cond_imm16(Flags),
+    jp_imm16,
     jp_hl,
-    call_cond_imm16(Flags, u16),
-    call_imm16(u16),
+    call_cond_imm16(Flags),
+    call_imm16,
     rst_tgt3(),
     pop_r16stk(Registers_16),
     push_r16stk(Registers_16),
-    ldh_c_a(Flags),
-    ldh_imm8_a(u8),
-    ld_imm16_a(u16),
-    ldh_a_c(Flags),
-    ldh_a_imm8(u8),
-    ld_a_imm16(u16),
-    add_sp_imm8(u8),
-    ld_hl_sp_imm8(u8),
+    ldh_c_a,
+    ldh_imm8_a,
+    ld_imm16_a,
+    ldh_a_c,
+    ldh_a_imm8,
+    ld_a_imm16,
+    add_sp_imm8,
+    ld_hl_sp_imm8,
     ld_sp_hl,
     di,
     ei,
@@ -86,8 +86,8 @@ fn load_ROM() {
     println!("{} {}", rom.len(), 0xFFFF);
 }
 
-fn get_instruction(opcode: (u8, u8, u8, u8, u8, u8, u8, u8)) -> Ops {
-    match opcode {
+pub(crate) fn get_instruction(opcode: u8) -> Ops {
+    match byte_to_tuple(opcode) {
         (0, 0, b5, b4, b3, b2, b1, b0) => match_block_0((b5, b4, b3, b2, b1, b0)),
         (0, 1, b5, b4, b3, b2, b1, b0) => match_block_1((b5, b4, b3, b2, b1, b0)),
         (1, 0, b5, b4, b3, b2, b1, b0) => match_block_2((b5, b4, b3, b2, b1, b0)),
@@ -99,7 +99,7 @@ fn get_instruction(opcode: (u8, u8, u8, u8, u8, u8, u8, u8)) -> Ops {
 fn match_block_0(opcode: (u8, u8, u8, u8, u8, u8)) -> Ops {
     match opcode {
         (0, 0, 0, 0, 0, 0) => Ops::nop,
-        (0, 0, 1, 0, 0, 0) => Ops::ld_imm16_sp(()),
+        (0, 0, 1, 0, 0, 0) => Ops::ld_imm16_sp,
         (0, 0, 0, 1, 1, 1) => Ops::rlca,
         (0, 0, 1, 1, 1, 1) => Ops::rrca,
         (0, 1, 0, 1, 1, 1) => Ops::rla,
@@ -108,10 +108,11 @@ fn match_block_0(opcode: (u8, u8, u8, u8, u8, u8)) -> Ops {
         (1, 0, 1, 1, 1, 1) => Ops::cpl,
         (1, 1, 0, 1, 1, 1) => Ops::scf,
         (1, 1, 1, 1, 1, 1) => Ops::ccf,
-        (0, 1, 1, 0, 0, 0) => Ops::jr_imm8(()),
+        (0, 1, 1, 0, 0, 0) => Ops::jr_imm8,
         (0, 1, 0, 0, 0, 0) => Ops::stop,
 
-        (r1, r0, 0, 0, 0, 1) => Ops::ld_r16_imm16(bits_to_r16(r1, r0), ()),
+        (1, c1, c0, 0, 0, 0) => Ops::jr_cond_imm8(bits_to_flags(c1, c0)),
+        (r1, r0, 0, 0, 0, 1) => Ops::ld_r16_imm16(bits_to_r16(r1, r0)),
         (r1, r0, 0, 0, 1, 0) => Ops::ld_r16mem_a(bits_to_r16mem(r1, r0)),
         (r1, r0, 1, 0, 1, 0) => Ops::ld_a_r16mem(bits_to_r16mem(r1, r0)),
         (r1, r0, 0, 0, 1, 1) => Ops::inc_r16(bits_to_r16(r1, r0)),
@@ -119,8 +120,9 @@ fn match_block_0(opcode: (u8, u8, u8, u8, u8, u8)) -> Ops {
         (r1, r0, 1, 0, 0, 1) => Ops::add_hl_r16(bits_to_r16(r1, r0)),
         (r2, r1, r0, 1, 0, 0) => Ops::inc_r8(bits_to_r8(r2, r1, r0)),
         (r2, r1, r0, 1, 0, 1) => Ops::dec_r8(bits_to_r8(r2, r1, r0)),
-        (r2, r1, r0, 1, 1, 0) => Ops::ld_r8_imm8(bits_to_r8(r2, r1, r0), ()),
-        (1, c1, c0, 0, 0, 0) => Ops::jr_cond_imm8(bits_to_flags(c1, c0), ()),
+        (r2, r1, r0, 1, 1, 0) => Ops::ld_r8_imm8(bits_to_r8(r2, r1, r0)),
+
+        _ => Ops::nop,
     }
 }
 
@@ -141,43 +143,47 @@ fn match_block_2(opcode: (u8, u8, u8, u8, u8, u8)) -> Ops {
         (1, 0, 1, r2, r1, r0) => Ops::xor_a_r8(bits_to_r8(r2, r1, r0)),
         (1, 1, 0, r2, r1, r0) => Ops::or_a_r8(bits_to_r8(r2, r1, r0)),
         (1, 1, 1, r2, r1, r0) => Ops::cp_a_r8(bits_to_r8(r2, r1, r0)),
+
+        _ => Ops::nop,
     }
 }
 
 fn match_block_3(opcode: (u8, u8, u8, u8, u8, u8)) -> Ops {
     match opcode {
-        (0, 0, 0, 1, 1, 0) => Ops::add_a_imm8(()),
-        (0, 0, 1, 1, 1, 0) => Ops::adc_a_imm8(()),
-        (0, 1, 0, 1, 1, 0) => Ops::sub_a_imm8(()),
-        (0, 1, 1, 1, 1, 0) => Ops::sbc_a_imm8(()),
-        (1, 0, 0, 1, 1, 0) => Ops::and_a_imm8(()),
-        (1, 0, 1, 1, 1, 0) => Ops::xor_a_imm8(()),
-        (1, 1, 0, 1, 1, 0) => Ops::or_a_imm8(()),
-        (1, 1, 1, 1, 1, 0) => Ops::cp_a_imm8(()),
+        (0, 0, 0, 1, 1, 0) => Ops::add_a_imm8,
+        (0, 0, 1, 1, 1, 0) => Ops::adc_a_imm8,
+        (0, 1, 0, 1, 1, 0) => Ops::sub_a_imm8,
+        (0, 1, 1, 1, 1, 0) => Ops::sbc_a_imm8,
+        (1, 0, 0, 1, 1, 0) => Ops::and_a_imm8,
+        (1, 0, 1, 1, 1, 0) => Ops::xor_a_imm8,
+        (1, 1, 0, 1, 1, 0) => Ops::or_a_imm8,
+        (1, 1, 1, 1, 1, 0) => Ops::cp_a_imm8,
         (0, 0, 1, 0, 0, 1) => Ops::ret,
         (0, 1, 1, 0, 0, 1) => Ops::reti,
-        (0, 0, 0, 0, 1, 1) => Ops::jp_imm16(()),
+        (0, 0, 0, 0, 1, 1) => Ops::jp_imm16,
         (1, 0, 1, 0, 0, 1) => Ops::jp_hl,
-        (0, 0, 1, 1, 0, 1) => Ops::call_imm16(()),
+        (0, 0, 1, 1, 0, 1) => Ops::call_imm16,
         (0, 0, 1, 0, 1, 1) => Ops::prefix,
-        (1, 0, 0, 0, 1, 0) => Ops::ldh_c_a(()),
-        (1, 0, 0, 0, 0, 0) => Ops::ldh_imm8_a(()),
-        (1, 0, 1, 0, 1, 0) => Ops::ld_imm16_a(()),
-        (1, 1, 0, 0, 1, 0) => Ops::ldh_a_c(()),
-        (1, 1, 0, 0, 0, 0) => Ops::ldh_a_imm8(()),
-        (1, 1, 1, 0, 1, 0) => Ops::ld_a_imm16(()),
-        (1, 0, 1, 0, 0, 0) => Ops::add_sp_imm8(()),
-        (1, 1, 1, 0, 0, 0) => Ops::ld_hl_sp_imm8(()),
+        (1, 0, 0, 0, 1, 0) => Ops::ldh_c_a,
+        (1, 0, 0, 0, 0, 0) => Ops::ldh_imm8_a,
+        (1, 0, 1, 0, 1, 0) => Ops::ld_imm16_a,
+        (1, 1, 0, 0, 1, 0) => Ops::ldh_a_c,
+        (1, 1, 0, 0, 0, 0) => Ops::ldh_a_imm8,
+        (1, 1, 1, 0, 1, 0) => Ops::ld_a_imm16,
+        (1, 0, 1, 0, 0, 0) => Ops::add_sp_imm8,
+        (1, 1, 1, 0, 0, 0) => Ops::ld_hl_sp_imm8,
         (1, 1, 1, 0, 0, 1) => Ops::ld_sp_hl,
         (1, 1, 0, 0, 1, 1) => Ops::di,
         (1, 1, 1, 0, 1, 1) => Ops::ei,
 
         (0, c1, c0, 0, 0, 0) => Ops::ret_cond(bits_to_flags(c1, c0)),
-        (0, c1, c0, 0, 1, 0) => Ops::jp_cond_imm16(bits_to_flags(c1, c0), ()),
-        (0, c1, c0, 1, 0, 0) => Ops::call_cond_imm16(bits_to_flags(c1, c0), ()),
+        (0, c1, c0, 0, 1, 0) => Ops::jp_cond_imm16(bits_to_flags(c1, c0)),
+        (0, c1, c0, 1, 0, 0) => Ops::call_cond_imm16(bits_to_flags(c1, c0)),
         (t2, t1, t0, 1, 1, 1) => Ops::rst_tgt3(),
         (r1, r0, 0, 0, 0, 1) => Ops::pop_r16stk(bits_to_r16stk(r1, r0)),
         (r1, r0, 0, 1, 0, 1) => Ops::push_r16stk(bits_to_r16stk(r1, r0)),
+
+        _ => Ops::nop,
     }
 }
 
@@ -192,9 +198,17 @@ fn match_prefix(opcode: (u8, u8, u8, u8, u8, u8, u8, u8)) -> Ops {
         (0, 0, 1, 1, 0, r2, r1, r0) => Ops::swap_r8(bits_to_r8(r2, r1, r0)),
         (0, 0, 1, 1, 1, r2, r1, r0) => Ops::srl_r8(bits_to_r8(r2, r1, r0)),
 
-        (0, 1, b2, b1, b0, r2, r1, r0) => Ops::bit_b3_r8((), bits_to_r8(r2, r1, r0)),
-        (1, 0, b2, b1, b0, r2, r1, r0) => Ops::res_b3_r8((), bits_to_r8(r2, r1, r0)),
-        (1, 1, b2, b1, b0, r2, r1, r0) => Ops::set_b3_r8((), bits_to_r8(r2, r1, r0)),
+        (0, 1, b2, b1, b0, r2, r1, r0) => {
+            Ops::bit_b3_r8(b2 << 2 | b1 << 1 | b0, bits_to_r8(r2, r1, r0))
+        }
+        (1, 0, b2, b1, b0, r2, r1, r0) => {
+            Ops::res_b3_r8(b2 << 2 | b1 << 1 | b0, bits_to_r8(r2, r1, r0))
+        }
+        (1, 1, b2, b1, b0, r2, r1, r0) => {
+            Ops::set_b3_r8(b2 << 2 | b1 << 1 | b0, bits_to_r8(r2, r1, r0))
+        }
+
+        _ => Ops::nop,
     }
 }
 
@@ -255,6 +269,8 @@ fn bits_to_r8(r2: u8, r1: u8, r0: u8) -> Registers_8 {
         0b101 => Registers_8::L,
         0b110 => Registers_8::HL,
         0b111 => Registers_8::A,
+
+        _ => Registers_8::B,
     }
 }
 
@@ -265,6 +281,8 @@ fn bits_to_flags(c1: u8, c0: u8) -> Flags {
         0b01 => Flags::Z,
         0b10 => Flags::NC,
         0b11 => Flags::C,
+
+        _ => Flags::C,
     }
 }
 
