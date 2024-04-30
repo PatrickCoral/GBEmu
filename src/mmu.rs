@@ -32,6 +32,8 @@ enum CartridgeType {
     HuC1_RAM_BATTERY,
 }
 
+use std::fs::read;
+
 pub struct MMU {
     pub mmap: [u8; 0xFFFF],
     bank_addr: u16,
@@ -41,7 +43,7 @@ pub struct MMU {
 
 #[allow(non_camel_case_types)]
 enum MemoryType {
-    CARTRIDGE = 0x0000,
+    BANK_0 = 0x0000,
     BANK_N = 0x4000,
     VRAM = 0x8000,
     WRAM = 0xC000,
@@ -88,6 +90,20 @@ impl MMU {
             0x04 => 16,
             0x05 => 8,
             _ => 0,
+        }
+    }
+
+    pub(crate) fn load_bank_0(&mut self, path: &'static str) -> Result<(), ()> {
+        let file = read(path);
+        match file {
+            Ok(bytes) => {
+                println!("{}", bytes.len());
+                for i in 0x0000..0x4000 {
+                    self.writeTo(MemoryType::BANK_0, i as u16, bytes[i]);
+                }
+                Ok(())
+            }
+            Err(_) => Err(()),
         }
     }
 }

@@ -82,8 +82,9 @@ pub(crate) enum Ops {
 }
 
 fn load_ROM() {
-    let rom = read("res/cpu_instrs.gb").unwrap();
-    println!("{} {}", rom.len(), 0xFFFF);
+	let rom = read("res/cpu_instrs.gb").unwrap();
+	println!("{} {}", rom.len(), 0xFFFF);
+    println!("{:#X} {:#04X}", rom[0], rom[0xFFFF]);
 }
 
 pub(crate) fn get_instruction(opcode: u8) -> Ops {
